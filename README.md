@@ -99,3 +99,8 @@ mage stop
 ## 🚨 License
 
 :scroll: chat is licensed under the [GPL-3.0 license](https://github.com/openimsdk/chat#GPL-3.0-1-ov-file). See the [LICENSE](https://github.com/openimsdk/chat/tree/main/LICENSE) for the full license text.
+
+## 编译docker 镜像
+``` 
+docker build -t openim/openim-chat:v1.8.4-patch.2  .
+```
