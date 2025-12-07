@@ -131,39 +131,47 @@ func (o *Api) RegisterUser(c *gin.Context) {
 		FaceURL:    req.User.FaceURL,
 		CreateTime: time.Now().UnixMilli(),
 	}
-	
+
 	err = o.imApiCaller.RegisterUser(apiCtx, []*sdkws.UserInfo{userInfo})
 	if err != nil {
 		apiresp.GinError(c, err)
 		return
 	}
-    var specailHandleCode = req.InvitationCode
-	var f1, s1, r1 string
-	if len(specailHandleCode) >= 3 {
-		f1, s1, r1 = splitString(specailHandleCode)
-	}
-	if resp, err := o.adminClient.FindDefaultFriend(rpcCtx, &admin.FindDefaultFriendReq{}); err == nil {
-		// _ = o.imApiCaller.ImportFriend(apiCtx, respRegisterUser.UserID, resp.UserIDs)
-		 var combinedFriendIDs []string = resp.UserIDs
-		if f1=="s" && s1 == "s" { // 指定单聊 
-            combinedFriendIDs = []string{r1}
-		}else if (f1=="s" && s1 == "m"){
-			combinedFriendIDs = append([]string{r1}, resp.UserIDs...)	
+	var specailHandleCode = req.InvitationCode
+	if specailHandleCode == "" {
+		if resp, err := o.adminClient.FindDefaultFriend(rpcCtx, &admin.FindDefaultFriendReq{}); err == nil {
+			_ = o.imApiCaller.ImportFriend(apiCtx, respRegisterUser.UserID, resp.UserIDs)
 		}
-		_ = o.imApiCaller.ImportFriend(apiCtx, respRegisterUser.UserID, combinedFriendIDs)
-	}
-	if resp, err := o.adminClient.FindDefaultGroup(rpcCtx, &admin.FindDefaultGroupReq{}); err == nil {
-		// _ = o.imApiCaller.InviteToGroup(apiCtx, respRegisterUser.UserID, resp.GroupIDs)
-				var combinedFriendIDs []string = resp.GroupIDs
-		if f1=="g" && s1 == "s" { // 指定单聊 
-            combinedFriendIDs = []string{r1}
-		}else if (f1=="g" && s1 == "m"){
-			combinedFriendIDs = append([]string{r1}, resp.GroupIDs...)	
+		if resp, err := o.adminClient.FindDefaultGroup(rpcCtx, &admin.FindDefaultGroupReq{}); err == nil {
+			_ = o.imApiCaller.InviteToGroup(apiCtx, respRegisterUser.UserID, resp.GroupIDs)
 		}
-		_ = o.imApiCaller.InviteToGroup(apiCtx, respRegisterUser.UserID, combinedFriendIDs)
+	} else {
+		var f1, s1, r1 string
+		if len(specailHandleCode) >= 3 {
+			f1, s1, r1 = splitString(specailHandleCode)
+		}
+		if resp, err := o.adminClient.FindDefaultFriend(rpcCtx, &admin.FindDefaultFriendReq{}); err == nil {
+			// _ = o.imApiCaller.ImportFriend(apiCtx, respRegisterUser.UserID, resp.UserIDs)
+			var combinedFriendIDs []string = resp.UserIDs
+			if f1 == "s" && s1 == "s" { // 指定单聊
+				combinedFriendIDs = []string{r1}
+			} else if f1 == "s" && s1 == "m" {
+				combinedFriendIDs = append([]string{r1}, resp.UserIDs...)
+			}
+			_ = o.imApiCaller.ImportFriend(apiCtx, respRegisterUser.UserID, combinedFriendIDs)
+		}
+		if resp, err := o.adminClient.FindDefaultGroup(rpcCtx, &admin.FindDefaultGroupReq{}); err == nil {
+			// _ = o.imApiCaller.InviteToGroup(apiCtx, respRegisterUser.UserID, resp.GroupIDs)
+			var combinedFriendIDs []string = resp.GroupIDs
+			if f1 == "g" && s1 == "s" { // 指定单聊
+				combinedFriendIDs = []string{r1}
+			} else if f1 == "g" && s1 == "m" {
+				combinedFriendIDs = append([]string{r1}, resp.GroupIDs...)
+			}
+			_ = o.imApiCaller.InviteToGroup(apiCtx, respRegisterUser.UserID, combinedFriendIDs)
+		}
+
 	}
-
-
 
 	var resp apistruct.UserRegisterResp
 	if req.AutoLogin {
@@ -178,22 +186,22 @@ func (o *Api) RegisterUser(c *gin.Context) {
 	apiresp.GinSuccess(c, &resp)
 }
 func splitString(s string) (string, string, string) {
-    // 1. 将字符串转换为 []rune 切片，以便安全地处理 Unicode 字符
-    runes := []rune(s)
-    // 2. 检查长度。虽然函数外部已要求长度大于3，但内部检查是良好的编程习惯。
-    if len(runes) < 3 {
-        // 如果长度不足，你可以选择 panic 或返回错误，这里为简化示例返回空字符串
-        return "", "", ""
-    }
-    // 3. 执行切片操作
-    // 第一个字符 (索引 0)
-    first := string(runes[0:1])
-    // 第二个字符 (索引 1)
-    second := string(runes[1:2])
-    // 剩下的所有字符 (从索引 2 开始到末尾)
-    // 注意： Go 的切片语法 [2:] 表示从索引 2 开始到切片末尾
-    rest := string(runes[2:])
-    return first, second, rest
+	// 1. 将字符串转换为 []rune 切片，以便安全地处理 Unicode 字符
+	runes := []rune(s)
+	// 2. 检查长度。虽然函数外部已要求长度大于3，但内部检查是良好的编程习惯。
+	if len(runes) < 3 {
+		// 如果长度不足，你可以选择 panic 或返回错误，这里为简化示例返回空字符串
+		return "", "", ""
+	}
+	// 3. 执行切片操作
+	// 第一个字符 (索引 0)
+	first := string(runes[0:1])
+	// 第二个字符 (索引 1)
+	second := string(runes[1:2])
+	// 剩下的所有字符 (从索引 2 开始到末尾)
+	// 注意： Go 的切片语法 [2:] 表示从索引 2 开始到切片末尾
+	rest := string(runes[2:])
+	return first, second, rest
 }
 func (o *Api) Login(c *gin.Context) {
 	req, err := a2r.ParseRequest[chatpb.LoginReq](c)
